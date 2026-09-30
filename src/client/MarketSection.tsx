@@ -5302,7 +5302,6 @@ export function MarketSection(props: MarketSectionProps) {
         </div>
         <div className={css.sub}>
           <span>{t('subtitle')}</span>
-          <a className={css.submitLink} href="https://github.com/awesome-dsh-plugin/awesome-dsh-plugin/blob/main/contributing.md" target="_blank" rel="noreferrer">{t('submitPlugin')}</a>
           <span className={css.grow} />
           <Button
             variant="outline"
