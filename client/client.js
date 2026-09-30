@@ -2710,6 +2710,124 @@ window.__ModuleLoader__.load({ id: "dshmarket", factory: (require) => {
 			});
 		}
 		//#endregion
+		//#region src/client/market-mark.ts
+		/**
+		* The market's block mark as geometry rather than as a component.
+		*
+		* Two consumers draw this mark and they must not drift:
+		*
+		* - `MarketLogo` (MarketSection.tsx) renders it inside the section as an
+		*   ordinary React SVG in `currentColor`, including the animated variant;
+		* - `settings-nav-icon.ts` serialises it into a CSS mask for the settings
+		*   navigation glyph, which cannot use `currentColor` (a mask is an
+		*   independent image) and so needs it as standalone markup.
+		*
+		* Keeping the numbers here means a change to the mark is one edit, and the
+		* suite can hold both renderings to the same source.
+		*
+		* The mark is the brand asset in `assets/logo.svg`: an 8-cell grid plus the
+		* block being plugged into its empty corner, offset and tilted 9°.
+		*/
+		/** Side of one block, and its corner radius. */
+		const MARK_BLOCK_SIZE = 3.3;
+		const MARK_BLOCK_RADIUS = .53;
+		/** The eight grid cells, row-major. The ninth slot stays empty on purpose. */
+		const MARK_GRID_BLOCKS = [
+			{
+				x: 1.96,
+				y: 3.36
+			},
+			{
+				x: 5.71,
+				y: 3.36
+			},
+			{
+				x: 1.96,
+				y: 7.11
+			},
+			{
+				x: 5.71,
+				y: 7.11
+			},
+			{
+				x: 9.46,
+				y: 7.11
+			},
+			{
+				x: 1.96,
+				y: 10.86
+			},
+			{
+				x: 5.71,
+				y: 10.86
+			},
+			{
+				x: 9.46,
+				y: 10.86
+			}
+		];
+		/**
+		* The block being plugged in: OUTSIDE the grid's empty corner, offset
+		* (+1.28, -1.27) and tilted 9deg, exactly as in assets/logo.svg. The earlier
+		* icon sat it neatly in the empty slot, which reads as one crooked tile
+		* rather than a block arriving — the whole idea of the mark, and the reason
+		* it no longer matched the GitHub logo.
+		*/
+		const MARK_PLUG_BLOCK = {
+			x: 10.74,
+			y: 2.09,
+			degrees: 9,
+			/** Rotation origin: the plug block's own centre. */
+			originX: 12.39,
+			originY: 3.74
+		};
+		//#endregion
+		//#region src/client/MarketPanelIcon.tsx
+		/**
+		* The market's block mark as a sidebar panel glyph.
+		*
+		* The `sidebar.panellist` row belongs to the sidebar: it renders this as the
+		* row's direct icon child, hands down the edge it wants, and paints the
+		* selected state around it. So the glyph is decorative — no wrapper element,
+		* because an inline box would become the baseline of a line box inside the
+		* row's glyph slot and lift the mark above the label — and it carries no label
+		* of its own. That is the same contract the schedule panel's clock follows in
+		* the shipped client.
+		*
+		* The geometry is market-mark.ts, the one source `MarketLogo` also draws the
+		* panel's own mark from, so the sidebar entry and the page it opens cannot
+		* drift apart.
+		*/
+		/**
+		* @param props - see {@link MarketPanelIconProps}.
+		* @returns the block mark at the requested size.
+		*/
+		function MarketPanelIcon({ size }) {
+			const plug = MARK_PLUG_BLOCK;
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("svg", {
+				width: size,
+				height: size,
+				viewBox: `0 0 16 16`,
+				fill: "currentColor",
+				"aria-hidden": "true",
+				focusable: "false",
+				children: [MARK_GRID_BLOCKS.map((block, index) => /* @__PURE__ */ (0, react_jsx_runtime.jsx)("rect", {
+					x: block.x,
+					y: block.y,
+					width: MARK_BLOCK_SIZE,
+					height: MARK_BLOCK_SIZE,
+					rx: MARK_BLOCK_RADIUS
+				}, index)), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("rect", {
+					x: plug.x,
+					y: plug.y,
+					width: MARK_BLOCK_SIZE,
+					height: MARK_BLOCK_SIZE,
+					rx: MARK_BLOCK_RADIUS,
+					transform: `rotate(${plug.degrees} ${plug.originX} ${plug.originY})`
+				})]
+			});
+		}
+		//#endregion
 		//#region src/client/ErrorBoundary.tsx
 		/**
 		* The market's last line of defence: a crash renders a way out, not a blank.
@@ -3296,78 +3414,6 @@ window.__ModuleLoader__.load({ id: "dshmarket", factory: (require) => {
 			"viewBtn": "nUhMVa_viewBtn",
 			"viewOn": "nUhMVa_viewOn",
 			"warnLine": "nUhMVa_warnLine"
-		};
-		//#endregion
-		//#region src/client/market-mark.ts
-		/**
-		* The market's block mark as geometry rather than as a component.
-		*
-		* Two consumers draw this mark and they must not drift:
-		*
-		* - `MarketLogo` (MarketSection.tsx) renders it inside the section as an
-		*   ordinary React SVG in `currentColor`, including the animated variant;
-		* - `settings-nav-icon.ts` serialises it into a CSS mask for the settings
-		*   navigation glyph, which cannot use `currentColor` (a mask is an
-		*   independent image) and so needs it as standalone markup.
-		*
-		* Keeping the numbers here means a change to the mark is one edit, and the
-		* suite can hold both renderings to the same source.
-		*
-		* The mark is the brand asset in `assets/logo.svg`: an 8-cell grid plus the
-		* block being plugged into its empty corner, offset and tilted 9°.
-		*/
-		/** Side of one block, and its corner radius. */
-		const MARK_BLOCK_SIZE = 3.3;
-		const MARK_BLOCK_RADIUS = .53;
-		/** The eight grid cells, row-major. The ninth slot stays empty on purpose. */
-		const MARK_GRID_BLOCKS = [
-			{
-				x: 1.96,
-				y: 3.36
-			},
-			{
-				x: 5.71,
-				y: 3.36
-			},
-			{
-				x: 1.96,
-				y: 7.11
-			},
-			{
-				x: 5.71,
-				y: 7.11
-			},
-			{
-				x: 9.46,
-				y: 7.11
-			},
-			{
-				x: 1.96,
-				y: 10.86
-			},
-			{
-				x: 5.71,
-				y: 10.86
-			},
-			{
-				x: 9.46,
-				y: 10.86
-			}
-		];
-		/**
-		* The block being plugged in: OUTSIDE the grid's empty corner, offset
-		* (+1.28, -1.27) and tilted 9deg, exactly as in assets/logo.svg. The earlier
-		* icon sat it neatly in the empty slot, which reads as one crooked tile
-		* rather than a block arriving — the whole idea of the mark, and the reason
-		* it no longer matched the GitHub logo.
-		*/
-		const MARK_PLUG_BLOCK = {
-			x: 10.74,
-			y: 2.09,
-			degrees: 9,
-			/** Rotation origin: the plug block's own centre. */
-			originX: 12.39,
-			originY: 3.74
 		};
 		//#endregion
 		//#region src/client/comments.ts
@@ -14521,6 +14567,15 @@ window.__ModuleLoader__.load({ id: "dshmarket", factory: (require) => {
 		* same string as the locale namespace (`dsh-market`) this file uses for copy.
 		*/
 		const MARKET_PACKAGE_NAME = "dshmarket";
+		/**
+		* The market's sidebar entry id, and the `main` key it addresses.
+		*
+		* The two slots are one registration split in two: `sidebar.panellist` owns
+		* the row, `main` owns the page, and this id is the whole convention between
+		* them. Deliberately not `plugins` — that id belongs to the shell's own
+		* Plugins panel, and reusing it would take that row away.
+		*/
+		const MARKET_PANEL_ID = "market";
 		const name = "dsh-market";
 		const inject = [
 			"slots",
@@ -14639,6 +14694,20 @@ window.__ModuleLoader__.load({ id: "dshmarket", factory: (require) => {
 					sectionGate.retire();
 				}
 			})));
+			const sidebarCtx = ctx;
+			sidebarCtx.slots.inject("main", () => sidebarCtx.slots.register({
+				name: "main",
+				key: MARKET_PANEL_ID,
+				locale: NS,
+				inject: () => ({ t })
+			}, () => buildMarketElement()));
+			sidebarCtx.slots.inject("sidebar.panellist", () => sidebarCtx.slots.register({
+				name: "sidebar.panellist",
+				id: MARKET_PANEL_ID,
+				order: 30,
+				locale: NS,
+				label: () => t("nav")
+			}, MarketPanelIcon));
 			const Toast = () => (0, react.createElement)(InstallToast, { t });
 			ctx.slots.inject("shell.overlay", () => ctx.slots.register({
 				name: "shell.overlay",

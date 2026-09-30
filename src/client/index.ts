@@ -11,6 +11,7 @@ import { missingIcons } from './icons.ts'
 import { en, zh } from './locales.ts'
 import { InstallToast } from './InstallToast.tsx'
 import { MarketErrorBoundary } from './ErrorBoundary.tsx'
+import { MarketPanelIcon } from './MarketPanelIcon.tsx'
 import { MarketSection } from './MarketSection.tsx'
 import { marketElement } from './market-element.ts'
 import { createSectionGate } from './section-gate.ts'
@@ -60,6 +61,16 @@ interface SettingsScopeHost {
  * same string as the locale namespace (`dsh-market`) this file uses for copy.
  */
 const MARKET_PACKAGE_NAME = 'dshmarket'
+
+/**
+ * The market's sidebar entry id, and the `main` key it addresses.
+ *
+ * The two slots are one registration split in two: `sidebar.panellist` owns
+ * the row, `main` owns the page, and this id is the whole convention between
+ * them. Deliberately not `plugins` — that id belongs to the shell's own
+ * Plugins panel, and reusing it would take that row away.
+ */
+const MARKET_PANEL_ID = 'market'
 
 /** The subset of the theme service this plugin touches. */
 interface ThemeService {
@@ -279,6 +290,51 @@ export function apply(ctx: MarketClientContext): void {
     locale: NS,
     inject: () => ({ t }),
   }, () => h(SettingsCard, { t, onRemoved: () => { sectionGate.retire() } })))
+
+  // The market's seat in the sidebar. Until now the market lived only inside
+  // Settings, so browsing plugins meant opening the settings dialog first.
+  // This is a MAIN-AREA panel — not a dialog, not a right-sidebar tab:
+  // choosing the row replaces the conversation and the right sidebar with this
+  // page, exactly as the shell's own Plugins entry does (#1089).
+  //
+  // Registered as the pair the slot contract defines: `sidebar.panellist`
+  // draws the row and addresses `main` by the same id. Both registrations sit
+  // behind `slots.inject`, so a host that never declares those slots never
+  // runs this code — the same detection every other seat here uses.
+  // The sidebar pair needs a register form that declares the shell's owner
+  // props: the row hands its icon the edge it wants and whether the panel is
+  // selected, so the `() => unknown` component signature MarketClientContext
+  // declares would reject the icon outright (TS2345). Locally typed for the
+  // same reason — and in the same shape — as the bundle-config and
+  // plugins-tab seats above.
+  const sidebarCtx = ctx as unknown as {
+    slots: {
+      inject(name: string, register: () => unknown): void
+      register(
+        options: Record<string, unknown>,
+        component: (ownerProps: { size: number; active: boolean }) => unknown,
+      ): unknown
+    }
+  }
+
+  sidebarCtx.slots.inject('main', () => sidebarCtx.slots.register({
+    name: 'main',
+    key: MARKET_PANEL_ID,
+    locale: NS,
+    // The element is built per render, like the settings section: the panel's
+    // props are live (locale, theme), and a cached element would freeze them.
+    inject: () => ({ t }),
+  }, () => buildMarketElement()))
+
+  sidebarCtx.slots.inject('sidebar.panellist', () => sidebarCtx.slots.register({
+    name: 'sidebar.panellist',
+    id: MARKET_PANEL_ID,
+    // After the shell's own rows (Plugins, Scheduled tasks), so a new entry
+    // never displaces one the user already reaches for.
+    order: 30,
+    locale: NS,
+    label: () => t('nav'),
+  }, MarketPanelIcon))
 
   const Toast = () => h(InstallToast, { t })
   ctx.slots.inject('shell.overlay', () => ctx.slots.register({
