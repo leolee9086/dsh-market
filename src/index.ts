@@ -7,6 +7,8 @@ import type { Context } from '@deepseek-ai/cordis'
 import { dirname, isAbsolute } from 'node:path'
 import { createDesktopPluginRuntime, setHostPackageManager, type DesktopPnpmLike, type HostPackageManager } from './dsh-cli.ts'
 import { createOfficialDesktopRuntime, type OfficialPluginManagerLike } from './official-desktop.ts'
+import { registerMarketTools, type ToolRegistryLike } from './agent-tools.ts'
+import type { ApprovalRequesterLike, SandboxPolicyLike } from './approval.ts'
 import { isDshProfileName } from './profile.ts'
 import { setTrustedHostsSource } from './http.ts'
 import { mountMarketRoutes, type HostPluginActivation, type MarketConfig, type MarketHost } from './routes.ts'
@@ -238,6 +240,25 @@ export function apply(ctx: Context, config?: Config): void {
             ? { dshInstallDir: dirname(profileContext.installAnchor) } : {}),
         }
         installDesktopMarketSettings(ctx)
+        // Agent-facing install tool. The GUI's own install button runs inside
+        // a web request, which carries no agent and no open turn, so it can
+        // never reach the host's approval stack (see src/approval.ts) — an
+        // agent that wants to install something asks through this tool
+        // instead. Registered inside this branch because the tool delegates
+        // to the same plugin manager service the runtime above wraps.
+        registerMarketTools({
+          tools: hostCtx.get('tools') as ToolRegistryLike | undefined,
+          approval: {
+            approver: hostCtx.get('approval') as ApprovalRequesterLike | undefined,
+            policy: hostCtx.get('sandboxPolicy') as SandboxPolicyLike | undefined,
+          },
+          pluginManager: () => hostCtx.get('pluginManager') as OfficialPluginManagerLike | undefined,
+          profileName,
+          // `gh` runs in this directory; it has nothing to do with the profile
+          // layout, so an unnamed launcher directory falls back to the process
+          // working directory rather than refusing the tool.
+          profileDir: profileDirectory ?? process.cwd(),
+        })
         host.effect(() => {
           const restoreTrustedHosts = useTrustedHosts(ctx)
           const disposeRoutes = mountMarketRoutes(host, resolved, runtime, agentsLookupOf(ctx))
