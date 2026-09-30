@@ -1,11 +1,19 @@
 node_modules/
-lib/
 research/
 *.tgz
 .DS_Store
 npm-cache/
 docs/
 data/readmes-snapshot.json
+
+# This fork commits the built host output (lib/). Upstream ignores it and
+# rebuilds from a `prepare` script instead, which makes every git install
+# execute code at install time and ask for a build authorization. With lib/ in
+# the tree the install has nothing to build, so nothing has to be authorized —
+# and no devDependencies (typescript, playwright, react) are pulled in either.
+# Only the incremental cache and sourcemaps stay out.
+lib/**/*.tsbuildinfo
+lib/**/*.map
 
 # Generated when a local build enables sourcemaps; never committed (#533).
 client/*.map
